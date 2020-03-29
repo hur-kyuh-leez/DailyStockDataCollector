@@ -20,6 +20,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.IO;
 
 namespace DailyStockDataCollector
     /*
@@ -40,6 +41,7 @@ namespace DailyStockDataCollector
         public Form1()
         {
             InitializeComponent();
+            LoadLastVars();
 
             axKHOpenAPI1.CommConnect(); //start kiwoom api
             axKHOpenAPI1.OnReceiveTrData += API_OnReceiveTrData; //TrData가 키움 서버로 부터 왔을 시 받음
@@ -48,9 +50,26 @@ namespace DailyStockDataCollector
             투자자별매매동향Button.Click += Button_Click;
             프로그램매매동향Button.Click += Button_Click;
 
-            // intial variable for textboxes
-            dateTextBox.Text = DateTime.Now.ToString("yyyyMMdd");
-            여기서부터다시시작textBox.Text = "";
+            // Set environment variable before calling Restart
+
+            // Detect restart:
+            var wasRestarted = Environment.GetEnvironmentVariable("MYAPP_RESTART");
+
+            if (wasRestarted == "1")
+            {
+                // Your app was restarted
+                Environment.SetEnvironmentVariable("MYAPP_RESTART", "0");
+                LoadLastVars();
+                여기서부터다시시작textBox.Text = code;
+            }
+            else
+            {
+                // intial variable for textboxes
+                dateTextBox.Text = DateTime.Now.ToString("yyyyMMdd");
+                여기서부터다시시작textBox.Text = "";
+            }
+            
+
         }
 
         private void Button_Click(object sender, EventArgs e)
@@ -79,7 +98,7 @@ namespace DailyStockDataCollector
                         //int result = axKHOpenAPI1.CommRqData("일별주가요청-" + code, "opt10059", 0, GetScreenNum());
 
                         int result = axKHOpenAPI1.CommRqData("일별주가요청", "opt10059", 0, GetScreenNum());
-                        Thread.Sleep(5000); // 여유롭게 요청 마다 5초 줌
+                        Thread.Sleep(3750); // 여유롭게 요청 마다 5초 줌
                         objAuto.WaitOne(); // Thread에 기달리라고 함
                     }
                 });
@@ -93,12 +112,12 @@ namespace DailyStockDataCollector
                     string[] codeList = getCodeList("kosdaq", 여기서부터다시시작textBox.Text);
                     for (int i = 0; i < codeList.Count(); i++)
                     {
-                        string code = codeList[i];
+                        code = codeList[i];
                         axKHOpenAPI1.SetInputValue("시간일자구분", "2");
                         axKHOpenAPI1.SetInputValue("금액수량구분", "2");
                         axKHOpenAPI1.SetInputValue("종목코드", code);
                         axKHOpenAPI1.SetInputValue("날짜", dateTextBox.Text);
-                        int result = axKHOpenAPI1.CommRqData("프로그램일별요청-" + code, "opt90013", 0, GetScreenNum());
+                        int result = axKHOpenAPI1.CommRqData("프로그램일별요청", "opt90013", 0, GetScreenNum());
                         Thread.Sleep(3750);
                         objAuto.WaitOne();
                     }
@@ -150,17 +169,20 @@ namespace DailyStockDataCollector
             else if (e.sRQName.Contains("프로그램일별요청"))
                 // 여기는 다시 손바야함
             {
-                string code = e.sRQName.Split('-')[1];
                 listBox.Items.Add("Worked On: 프로그램일별요청 " + code);
                 for (int i = 0; i < axKHOpenAPI1.GetRepeatCnt(e.sTrCode, e.sRQName); i++)
                 {
                     long recorded_time = Int64.Parse(DateTime.Now.ToString("yyyyMMddHHmmss"));
                     int date = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "일자"));
                     int program = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "프로그램순매수수량"));
+
+                    Console.WriteLine("code" + code);
+                    Console.WriteLine("program" + program);
+
                     using (IDbConnection cnn = new SQLiteConnection(ConfigurationManager.ConnectionStrings["Default"].ConnectionString))
                     {
                         //이미 primary key가 있으면 ignore하고 아니면 insert하셈
-                        cnn.Execute("update DailyCollectedData set  program = @program where (code = @code and date = @date)", new { program, code, date});
+                        cnn.Execute("update DailyCollectedData set  program = @program where (code = @code and date = @date)", new { program, code, date });
                     }
                 }
                 objAuto.Set();
@@ -211,11 +233,40 @@ namespace DailyStockDataCollector
          이걸 이용해 자동으로 ScreenNum 알맞게 올리기
          */
         {
-            if (screenNum >= 9999)
+            //if ((screenNum+1) % 199 == 0)
+            //{
+            //    SaveVars(dateTextBox.Text, code);
+            //    Environment.SetEnvironmentVariable("MYAPP_RESTART", "1");
+            //    Application.Restart();
+            //    Environment.Exit(0);
+            //}
+
+ 
+            if (screenNum >= 199)
                 screenNum = 1000;
+
 
             screenNum++;
             return screenNum.ToString();
+        }
+
+        private void SaveVars(string date, string code)
+        {
+            using (TextWriter tw = new StreamWriter("SavedVars.txt"))
+            {
+                tw.WriteLine(date);
+                tw.WriteLine(code);
+            }
+        }
+
+        private void LoadLastVars()
+        {
+            using (TextReader tr = new StreamReader("SavedVars.txt"))
+            {
+                // read lines of text
+                dateTextBox.Text = tr.ReadLine();
+                code = tr.ReadLine();
+            }
         }
     }
 }
