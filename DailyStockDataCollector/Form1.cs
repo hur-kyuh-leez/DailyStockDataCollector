@@ -103,10 +103,6 @@ namespace DailyStockDataCollector
                     for (int i=0; i<codeListCount;i++)
                     {
                         code = codeList[i];
-                        this.Invoke(new Action(delegate ()
-                        {
-                            progressBar.Maximum = codeListCount;
-                        }));
                         Console.WriteLine(axKHOpenAPI1.GetMasterCodeName(codeList[i]));
                         // input
                         axKHOpenAPI1.SetInputValue("일자", dateTextBox.Text);
@@ -127,6 +123,7 @@ namespace DailyStockDataCollector
             }
             else if (sender == 프로그램매매동향Button)
             {
+                CheckDataExist("프로그램일별요청");
                 listBox.Items.Add("프로그램매매동향 저장 클릭");
                 Thread rqThread = new Thread(delegate ()
                 {
@@ -165,6 +162,7 @@ namespace DailyStockDataCollector
             }
             else if (sender == 일별가격정보Button)
             {
+                CheckDataExist("주식일주월시분요청");
                 listBox.Items.Add("일별가격정보 저장 클릭");
                 Thread rqThread = new Thread(delegate ()
                 {
@@ -180,6 +178,7 @@ namespace DailyStockDataCollector
                 rqThread.Start();
             }
             else if (sender == 종목명저장Button)
+                // 이거 왜만들었지? 파이썬으로 분석할때 쓰려고 했나? 그렇다
             {
                 listBox.Items.Add("종목명 저장 클릭");
                 Thread rqThread = new Thread(delegate ()
@@ -220,12 +219,7 @@ namespace DailyStockDataCollector
 
             if (e.sRQName.Equals("종목별투자자기관별요청")) 
             {
-                string nextCode="";
-                if(!((indexOfCode+1) == codeListCount))
-                {
-                    nextCode = codeList[indexOfCode + 1];
-                }
-                listBox.Items.Add("Worked On: 종목별투자자기관별요청 " + code + " 다음 코드는..." + nextCode);
+                listBox.Items.Add("Worked On: 종목별투자자기관별요청 " + code);
                 for (int i = 0; i < axKHOpenAPI1.GetRepeatCnt(e.sTrCode, e.sRQName); i++)
                 {
                     long recorded_time = Int64.Parse(DateTime.Now.ToString("yyyyMMddHHmmss"));
@@ -282,7 +276,7 @@ namespace DailyStockDataCollector
 
                     using (IDbConnection cnn = new SQLiteConnection(ConfigurationManager.ConnectionStrings["Default"].ConnectionString))
                     {
-                        //이미 primary key가 있으면 ignore하고 아니면 insert하셈
+                        //update만 해야한다 왜냐하면 어느 투자자별을 할 때 종목까지 했는지 체크 할 때를 위해서 
                         cnn.Execute("update DailyCollectedData set program = @program where (code = @code and date = @date)", new { program, code, date });
                     }
                 }
@@ -324,13 +318,15 @@ namespace DailyStockDataCollector
 
                     using (IDbConnection cnn = new SQLiteConnection(ConfigurationManager.ConnectionStrings["Default"].ConnectionString))
                     {
-                        //이미 primary key가 있으면 ignore하고 아니면 insert하셈
+                        //이미 primary key가 있으면 ignore하고 아니면 insert하셈, 여기는 insert해도 된다 다른 테이블 이기 때문에
                         cnn.Execute("insert or ignore into DailyPriceInfo (recorded_time, code, date, open, high, low, close, volume) values (@recorded_time, @code, @date, @open, @high, @low, @close, @volume)", new { recorded_time, code, date, open, high, low, close, volume });
 
                     }
                 }
                 objAuto.Set();
             }
+
+            // 키움에서 api 얼마나 빨리 받고 프로그램에서 처리하나 계산 필요한 이유는 총 걸리는 계산 하기 위해
             sw.Stop();
             long timeLeft = (codeListCount - indexOfCode) * sw.ElapsedMilliseconds * 10; //왜 10 곱해야지 정확한게 나오는게 모르겠지만 일단 되니깐 ㄱㄱ
             TimeSpan ts = TimeSpan.FromMilliseconds(timeLeft);
@@ -464,10 +460,56 @@ namespace DailyStockDataCollector
                             fromHere = code;
                         }
                     }
-                    여기서부터다시시작textBox.Text = fromHere;
                 }
+                else if(button.Equals("프로그램일별요청"))
+                {
+                    for (int i = 0; i < codeListCount; i++)
+                    {
+                        code = codeList[i];
+                        var programQuantity = cnn.ExecuteScalar("select program from DailyCollectedData where (date=@date and code=@code)", new { date, code });
+                        if (programQuantity == null)
+                        {
+                            fromHere = code;
+                        }
+                    }
+                }
+                else if(button.Equals("주식일주월시분요청"))
+                {
+                    for (int i = 0; i < codeListCount; i++)
+                    {
+                        code = codeList[i];
+                        var exists = cnn.ExecuteScalar<bool>("select count(1) from DailyPriceInfo where (date=@date and code=@code)", new { date, code });
+                        if (exists)
+                        {
+                            fromHere = code;
+                        }
+                    }
+                }
+
+
+                여기서부터다시시작textBox.Text = fromHere;
+
+
+
+
+                //else if (button.Equals("주식기본정보요청"))
+                //    // 이건 불필요 왜냐하면 이미 있는 데이터 위에 덮어 쓰는거니깐
+                //{
+                //    for (int i = 0; i < codeListCount; i++)
+                //    {
+                //        code = codeList[i];
+                //        var exists = cnn.ExecuteScalar<bool>("select count(1) from freefloatData where code=@code", new { code });             
+                //        if (exists)
+                //        {
+                //            fromHere = code;
+                //        }
+                //    }
+                //}
+
+
             }
             codeList = getCodeList(여기서부터다시시작textBox.Text);
+            progressBar.Maximum = codeListCount;
         }
     }
 }
