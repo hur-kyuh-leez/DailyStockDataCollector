@@ -39,6 +39,11 @@
             this.여기서부터다시시작textBox = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
+            this.유동주식수Button = new System.Windows.Forms.Button();
+            this.일별가격정보Button = new System.Windows.Forms.Button();
+            this.종목명저장Button = new System.Windows.Forms.Button();
+            this.progressBar = new System.Windows.Forms.ProgressBar();
+            this.progressLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.axKHOpenAPI1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -114,11 +119,60 @@
             this.label2.TabIndex = 8;
             this.label2.Text = "yyyyMMdd";
             // 
+            // 유동주식수Button
+            // 
+            this.유동주식수Button.Location = new System.Drawing.Point(636, 104);
+            this.유동주식수Button.Name = "유동주식수Button";
+            this.유동주식수Button.Size = new System.Drawing.Size(152, 23);
+            this.유동주식수Button.TabIndex = 9;
+            this.유동주식수Button.Text = "유동주식수 저장";
+            this.유동주식수Button.UseVisualStyleBackColor = true;
+            // 
+            // 일별가격정보Button
+            // 
+            this.일별가격정보Button.Location = new System.Drawing.Point(636, 143);
+            this.일별가격정보Button.Name = "일별가격정보Button";
+            this.일별가격정보Button.Size = new System.Drawing.Size(152, 23);
+            this.일별가격정보Button.TabIndex = 10;
+            this.일별가격정보Button.Text = "일별가격정보 저장";
+            this.일별가격정보Button.UseVisualStyleBackColor = true;
+            // 
+            // 종목명저장Button
+            // 
+            this.종목명저장Button.Location = new System.Drawing.Point(636, 181);
+            this.종목명저장Button.Name = "종목명저장Button";
+            this.종목명저장Button.Size = new System.Drawing.Size(152, 23);
+            this.종목명저장Button.TabIndex = 11;
+            this.종목명저장Button.Text = "종목명 저장";
+            this.종목명저장Button.UseVisualStyleBackColor = true;
+            // 
+            // progressBar
+            // 
+            this.progressBar.Location = new System.Drawing.Point(55, 359);
+            this.progressBar.Name = "progressBar";
+            this.progressBar.Size = new System.Drawing.Size(570, 23);
+            this.progressBar.TabIndex = 12;
+            // 
+            // progressLabel
+            // 
+            this.progressLabel.Anchor = System.Windows.Forms.AnchorStyles.Top;
+            this.progressLabel.Location = new System.Drawing.Point(55, 385);
+            this.progressLabel.Name = "progressLabel";
+            this.progressLabel.Size = new System.Drawing.Size(570, 40);
+            this.progressLabel.TabIndex = 13;
+            this.progressLabel.Text = "로그인중...";
+            this.progressLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.progressLabel);
+            this.Controls.Add(this.progressBar);
+            this.Controls.Add(this.종목명저장Button);
+            this.Controls.Add(this.일별가격정보Button);
+            this.Controls.Add(this.유동주식수Button);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.여기서부터다시시작textBox);
@@ -146,6 +200,11 @@
         private System.Windows.Forms.TextBox 여기서부터다시시작textBox;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.Button 유동주식수Button;
+        private System.Windows.Forms.Button 일별가격정보Button;
+        private System.Windows.Forms.Button 종목명저장Button;
+        private System.Windows.Forms.ProgressBar progressBar;
+        private System.Windows.Forms.Label progressLabel;
     }
 }
 
