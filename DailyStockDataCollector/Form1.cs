@@ -58,7 +58,7 @@ namespace DailyStockDataCollector
             // 일반 버튼 클릭 행동
             투자자별매매동향Button.Click += Button_Click;
             프로그램매매동향Button.Click += Button_Click;
-            유동주식수Button.Click += Button_Click;
+            주식기본정보Button.Click += Button_Click;
             일별가격정보Button.Click += Button_Click;
             종목명저장Button.Click += Button_Click;
 
@@ -143,9 +143,10 @@ namespace DailyStockDataCollector
                 });
                 rqThread.Start();
             }
-            else if (sender == 유동주식수Button)
+            else if (sender == 주식기본정보Button)
             {
-                listBox.Items.Add("유동주식수 저장 클릭");
+                listBox.Items.Add("주식기본정보 저장 클릭");
+                codeList = getCodeList(여기서부터다시시작textBox.Text);
                 Thread rqThread = new Thread(delegate ()
                 {
                   
@@ -206,13 +207,13 @@ namespace DailyStockDataCollector
             sw = Stopwatch.StartNew();
 
             // AxKHOpenAPILib._DKHOpenAPIEvents_OnReceiveTrDataEvent 뭐 들어 있는 지 확인
-            Console.WriteLine("sErrorCode" + e.sErrorCode);
-            Console.WriteLine("sMessage" + e.sMessage);
-            Console.WriteLine("sPrevNext" + e.sPrevNext);
-            Console.WriteLine("sRecordName" + e.sRecordName);
-            Console.WriteLine("sRQName" + e.sRQName);
-            Console.WriteLine("sScrNo" + e.sScrNo);
-            Console.WriteLine("sTrCode" + e.sTrCode);
+            Console.WriteLine("sErrorCode: " + e.sErrorCode);
+            Console.WriteLine("sMessage:" + e.sMessage);
+            Console.WriteLine("sPrevNext: " + e.sPrevNext);
+            Console.WriteLine("sRecordName: " + e.sRecordName);
+            Console.WriteLine("sRQName:" + e.sRQName);
+            Console.WriteLine("sScrNo: " + e.sScrNo);
+            Console.WriteLine("sTrCode: " + e.sTrCode);
 
 
             int indexOfCode = Array.IndexOf(codeList, code);
@@ -288,15 +289,134 @@ namespace DailyStockDataCollector
             {
                 listBox.Items.Add("Worked On: 주식기본정보요청 " + code);
 
-                long recorded_time = Int64.Parse(DateTime.Now.ToString("yyyyMMddHHmmss"));
-                int freefloat = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "유통주식"));
-                Console.WriteLine("code" + code);
-                Console.WriteLine("유통주식수" + freefloat);
+                long recorded_time = Int64.Parse(DateTime.Now.ToString("yyyyMMddHHmmss")); // 이거는 안쓰네
+
+                int freefloat = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "유통주식"));         
+                int reportingMonth = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "결산월"));
+                float faceValue = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "액면가")); //액면가가 소수점인 것도 있다
+                int netAsset = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "자본금"));
+                int numberOfStocks = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "상장주식"));
+                float marginRatio = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "신용비율"));
+                int annualHigh = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "연중최고"));
+                int annualLow = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "연중최저"));
+                int marketCap = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "시가총액"));
+                float foreignerRatio = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "외인소진률"));
+                int substitutePrice = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "대용가"));
+                float PER = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "PER"));
+                int EPS = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "EPS"));
+                float ROE = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "ROE"));
+                float PBR = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "PBR"));
+                float EV = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "EV"));
+                float BPS = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "PBR"));
+                int Revenue = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "매출액"));
+                int Profit = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "영업이익"));
+                int Earning = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "당기순이익"));
+                int twoFiveZeroHigh = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "250최고"));
+                int twoFiveZeroLow = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "250최저"));
+                int twoFiveZeroHighDate = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "250최고가일"));
+                float twoFiveZeroHighTodayRatio = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "250최고가대비율"));
+                int twoFiveZeroLowDate = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "250최거가일"));
+                float twoFiveZeroLowTodayRatio = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "250최저가대비율"));
+                int price = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "현재가"));
+                float change = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "등락율"));
+                int volume = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "거래량"));
+                float todayYesterdayVolume = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "거래대비"));
+                float freefloatRatio = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "유통비율"));
+
+                Console.WriteLine("종목코드" + code);
+                Console.WriteLine("결산월" + reportingMonth);
+                Console.WriteLine("액면가" + faceValue);
+                Console.WriteLine("자본금" + netAsset);
+                Console.WriteLine("상장주식" + numberOfStocks);
+                Console.WriteLine("신용비율" + marginRatio);
+                Console.WriteLine("연중최고" + annualHigh);
+                Console.WriteLine("연중최저" + annualLow);
+                Console.WriteLine("시가총액" + marketCap);
+                //Console.WriteLine("유통주식수" + freefloat);
+                //Console.WriteLine("유통주식수" + freefloat);
+                //Console.WriteLine("유통주식수" + freefloat);
+                //Console.WriteLine("유통주식수" + freefloat);
+                //Console.WriteLine("유통주식수" + freefloat);
+                //Console.WriteLine("유통주식수" + freefloat);
+                //Console.WriteLine("유통주식수" + freefloat);
+                //Console.WriteLine("유통주식수" + freefloat);
+                //Console.WriteLine("유통주식수" + freefloat);
+                //Console.WriteLine("유통주식수" + freefloat);
+                //Console.WriteLine("유통주식수" + freefloat);
+                //Console.WriteLine("유통주식수" + freefloat);
+                //Console.WriteLine("유통주식수" + freefloat);
 
                 using (IDbConnection cnn = new SQLiteConnection(ConfigurationManager.ConnectionStrings["Default"].ConnectionString))
                 {
                     // insert into table and if there is conflict update
-                    cnn.Execute("insert into freefloatData(code, freefloat) values(@code, @freefloat) ON CONFLICT(code) DO UPDATE SET freefloat = @freefloat", new { code, freefloat }); 
+                    cnn.Execute("insert into freefloatData(code,freefloat,reportingMonth,faceValue,netAsset,numberOfStocks,marginRatio,annualHigh,annualLow,marketCap,foreignerRatio,substitutePrice,PER,EPS,ROE,PBR,EV,BPS,Revenue,Profit,Earning,twoFiveZeroHigh,twoFiveZeroHighDate,twoFiveZeroHighTodayRatio,twoFiveZeroLow,twoFiveZeroLowDate,twoFiveZeroLowTodayRatio,price,change,volume,todayYesterdayVolume,freefloatRatio) " +
+                        "values(@code,@freefloat,@reportingMonth,@faceValue,@netAsset,@numberOfStocks,@marginRatio,@annualHigh,@annualLow,@marketCap,@foreignerRatio,@substitutePrice,@PER,@EPS,@ROE,@PBR,@EV,@BPS,@Revenue,@Profit,@Earning,@twoFiveZeroHigh,@twoFiveZeroHighDate,@twoFiveZeroHighTodayRatio,@twoFiveZeroLow,@twoFiveZeroLowDate,@twoFiveZeroLowTodayRatio,@price,@change,@volume,@todayYesterdayVolume,@freefloatRatio) " +
+                        "ON CONFLICT(code) DO UPDATE SET " +
+                        "freefloat=@freefloat," +
+                        "reportingMonth=@reportingMonth," +
+                        "faceValue=@faceValue," +
+                        "netAsset=@netAsset," +
+                        "numberOfStocks=@numberOfStocks," +
+                        "marginRatio=@marginRatio," +
+                        "annualHigh=@annualHigh," +
+                        "annualLow=@annualLow," +
+                        "marketCap=@marketCap," +
+                        "foreignerRatio=@foreignerRatio," +
+                        "substitutePrice=@substitutePrice," +
+                        "PER=@PER," +
+                        "EPS=@EPS," +
+                        "ROE=@ROE," +
+                        "PBR=@PBR," +
+                        "EV=@EV," +
+                        "BPS=@BPS," +
+                        "Revenue=@Revenue," +
+                        "Profit=@Profit," +
+                        "Earning=@Earning," +
+                        "twoFiveZeroHigh=@twoFiveZeroHigh," +
+                        "twoFiveZeroHighDate=@twoFiveZeroHighDate," +
+                        "twoFiveZeroHighTodayRatio=@twoFiveZeroHighTodayRatio," +
+                        "twoFiveZeroLow=@twoFiveZeroLow," +
+                        "twoFiveZeroLowDate=@twoFiveZeroLowDate," +
+                        "twoFiveZeroLowTodayRatio=@twoFiveZeroLowTodayRatio," +
+                        "price=@price," +
+                        "change=@change," +
+                        "volume=@volume," +
+                        "todayYesterdayVolume=@todayYesterdayVolume," +
+                        "freefloatRatio=@freefloatRatio", new {
+                            code,
+                            freefloat,
+                            reportingMonth,
+                            faceValue,
+                            netAsset,
+                            numberOfStocks,
+                            marginRatio,
+                            annualHigh,
+                            annualLow,
+                            marketCap,
+                            foreignerRatio,
+                            substitutePrice,
+                            PER,
+                            EPS,
+                            ROE,
+                            PBR,
+                            EV,
+                            BPS,
+                            Revenue,
+                            Profit,
+                            Earning,
+                            twoFiveZeroHigh,
+                            twoFiveZeroHighDate,
+                            twoFiveZeroHighTodayRatio,
+                            twoFiveZeroLow,
+                            twoFiveZeroLowDate,
+                            twoFiveZeroLowTodayRatio,
+                            price,
+                            change,
+                            volume,
+                            todayYesterdayVolume,
+                            freefloatRatio
+                        });
+
                 }
                 objAuto.Set();
             }
@@ -463,15 +583,23 @@ namespace DailyStockDataCollector
                 }
                 else if(button.Equals("프로그램일별요청"))
                 {
-                    for (int i = 0; i < codeListCount; i++)
+                    if (여기서부터다시시작textBox.Text!="")
                     {
-                        code = codeList[i];
-                        var programQuantity = cnn.ExecuteScalar("select program from DailyCollectedData where (date=@date and code=@code)", new { date, code });
-                        if (programQuantity == null)
+                        fromHere = 여기서부터다시시작textBox.Text;
+                    }
+                    else
+                    {
+                        for (int i = 0; i < codeListCount; i++)
                         {
-                            fromHere = code;
+                            code = codeList[i];
+                            var programQuantity = cnn.ExecuteScalar("select program from DailyCollectedData where (date=@date and code=@code)", new { date, code });
+                            if (programQuantity == null)
+                            {
+                                fromHere = code;
+                            }
                         }
                     }
+                 
                 }
                 else if(button.Equals("주식일주월시분요청"))
                 {
@@ -509,7 +637,7 @@ namespace DailyStockDataCollector
 
             }
             codeList = getCodeList(여기서부터다시시작textBox.Text);
-            progressBar.Maximum = codeListCount;
+            progressBar.Maximum = codeList.Count();
         }
     }
 }

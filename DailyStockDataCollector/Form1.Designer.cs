@@ -39,7 +39,7 @@
             this.여기서부터다시시작textBox = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
-            this.유동주식수Button = new System.Windows.Forms.Button();
+            this.주식기본정보Button = new System.Windows.Forms.Button();
             this.일별가격정보Button = new System.Windows.Forms.Button();
             this.종목명저장Button = new System.Windows.Forms.Button();
             this.progressBar = new System.Windows.Forms.ProgressBar();
@@ -119,14 +119,14 @@
             this.label2.TabIndex = 8;
             this.label2.Text = "yyyyMMdd";
             // 
-            // 유동주식수Button
+            // 주식기본정보Button
             // 
-            this.유동주식수Button.Location = new System.Drawing.Point(636, 104);
-            this.유동주식수Button.Name = "유동주식수Button";
-            this.유동주식수Button.Size = new System.Drawing.Size(152, 23);
-            this.유동주식수Button.TabIndex = 9;
-            this.유동주식수Button.Text = "유동주식수 저장";
-            this.유동주식수Button.UseVisualStyleBackColor = true;
+            this.주식기본정보Button.Location = new System.Drawing.Point(636, 104);
+            this.주식기본정보Button.Name = "주식기본정보Button";
+            this.주식기본정보Button.Size = new System.Drawing.Size(152, 23);
+            this.주식기본정보Button.TabIndex = 9;
+            this.주식기본정보Button.Text = "주식기본정보 저장";
+            this.주식기본정보Button.UseVisualStyleBackColor = true;
             // 
             // 일별가격정보Button
             // 
@@ -172,7 +172,7 @@
             this.Controls.Add(this.progressBar);
             this.Controls.Add(this.종목명저장Button);
             this.Controls.Add(this.일별가격정보Button);
-            this.Controls.Add(this.유동주식수Button);
+            this.Controls.Add(this.주식기본정보Button);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.여기서부터다시시작textBox);
@@ -200,7 +200,7 @@
         private System.Windows.Forms.TextBox 여기서부터다시시작textBox;
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.Button 유동주식수Button;
+        private System.Windows.Forms.Button 주식기본정보Button;
         private System.Windows.Forms.Button 일별가격정보Button;
         private System.Windows.Forms.Button 종목명저장Button;
         private System.Windows.Forms.ProgressBar progressBar;
