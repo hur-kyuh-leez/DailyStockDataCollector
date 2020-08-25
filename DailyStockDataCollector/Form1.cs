@@ -22,6 +22,11 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.IO;
 using System.Diagnostics;
+
+// dual api
+using AxKHOpenAPILib;
+
+
 namespace DailyStockDataCollector
     /*
      이 프로그램은 장마감 후 각 종목에 투자자별 매매동향을 알기위해 만들었습니다.
@@ -43,17 +48,22 @@ namespace DailyStockDataCollector
         int codeListCount;
 
 
+        // dual api
+
         // use AutoResetEvent to get Code order right, without this "i" in "for loop" in "Button_Click()" takes a step faster than "API_OnReceiveTrData()"
         static AutoResetEvent objAuto = new AutoResetEvent(false); 
         public Form1()
         {
             InitializeComponent();
             axKHOpenAPI1.OnEventConnect += API_OnEventConnect;
+            axKHOpenAPI2.CommConnect(); //start kiwoom api2
             axKHOpenAPI1.CommConnect(); //start kiwoom api
 
             LoadLastVars();
-
+            
             axKHOpenAPI1.OnReceiveTrData += API_OnReceiveTrData; //TrData가 키움 서버로 부터 왔을 시 받음
+            axKHOpenAPI2.OnReceiveTrData += API_OnReceiveTrData; //TrData가 키움 서버로 부터 왔을 시 받음
+
 
             // 일반 버튼 클릭 행동
             투자자별매매동향Button.Click += Button_Click;
@@ -100,23 +110,42 @@ namespace DailyStockDataCollector
                 listBox.Items.Add("투자자별매매동향 저장 클릭");
                 Thread rqThread = new Thread(delegate () // 자몽님이 만들어 주신 "알바생"
                 {
-                    for (int i=0; i<codeListCount;i++)
+                    for (int i=0; i < codeListCount; i++)
                     {
-                        code = codeList[i];
-                        Console.WriteLine(axKHOpenAPI1.GetMasterCodeName(codeList[i]));
-                        // input
-                        axKHOpenAPI1.SetInputValue("일자", dateTextBox.Text);
-                        axKHOpenAPI1.SetInputValue("종목코드", code);
-                        axKHOpenAPI1.SetInputValue("금액수량구분", "2");
-                        axKHOpenAPI1.SetInputValue("매매구분", "0");
-                        axKHOpenAPI1.SetInputValue("단위구분", "1");
+                        if (i % 2 == 0)
+                        {
+                            Console.WriteLine(axKHOpenAPI1.GetMasterCodeName(codeList[i]));
 
-                        //sRQName에 종목코드를 추가해서 Receive event에서도 code 받을수 있게 하기 이렇게 해도 되지만 너무 Thread.Sleep에 의존하는거 같아 폐기
-                        //int result = axKHOpenAPI1.CommRqData("일별주가요청-" + code, "opt10059", 0, GetScreenNum());
+                            // input
+                            axKHOpenAPI1.SetInputValue("일자", dateTextBox.Text);
+                            axKHOpenAPI1.SetInputValue("종목코드", codeList[i]);
+                            axKHOpenAPI1.SetInputValue("금액수량구분", "2");
+                            axKHOpenAPI1.SetInputValue("매매구분", "0");
+                            axKHOpenAPI1.SetInputValue("단위구분", "1");
 
-                        int result = axKHOpenAPI1.CommRqData("종목별투자자기관별요청", "opt10059", 0, GetScreenNum());
-                        Thread.Sleep(sleepTime); // 여유롭게 요청 마다 5초 줌
-                        objAuto.WaitOne(timeOut); // Thread에 signal 올 때까지 기달리고 만약 20초이내 없으면 패스
+                            //sRQName에 종목코드를 추가해서 Receive event에서도 code 받을수 있게 하기 이렇게 해도 되지만 너무 Thread.Sleep에 의존하는거 같아 폐기 //dual api를 위해서 이걸로 다시 사용하기로
+                            //int result = axKHOpenAPI1.CommRqData("일별주가요청-" + code, "opt10059", 0, GetScreenNum());
+
+                            int result = axKHOpenAPI1.CommRqData("종목별투자자기관별요청_" + codeList[i], "opt10059", 0, GetScreenNum());
+                                                         //objAuto.WaitOne(timeOut); // Thread에 signal 올 때까지 기달리고 만약 20초이내 없으면 패스
+                        }
+                        else
+                        {
+                            Console.WriteLine(axKHOpenAPI1.GetMasterCodeName(codeList[i]));
+                            // input
+                            axKHOpenAPI2.SetInputValue("일자", dateTextBox.Text);
+                            axKHOpenAPI2.SetInputValue("종목코드", codeList[i]);
+                            axKHOpenAPI2.SetInputValue("금액수량구분", "2");
+                            axKHOpenAPI2.SetInputValue("매매구분", "0");
+                            axKHOpenAPI2.SetInputValue("단위구분", "1");
+
+                            //sRQName에 종목코드를 추가해서 Receive event에서도 code 받을수 있게 하기 이렇게 해도 되지만 너무 Thread.Sleep에 의존하는거 같아 폐기
+                            //int result = axKHOpenAPI1.CommRqData("일별주가요청-" + code, "opt10059", 0, GetScreenNum());
+
+                            int result = axKHOpenAPI2.CommRqData("종목별투자자기관별요청_" + codeList[i], "opt10059", 0, GetScreenNum());
+                            //objAuto.WaitOne(timeOut); // Thread에 signal 올 때까지 기달리고 만약 20초이내 없으면 패스
+                            Thread.Sleep(sleepTime); // 여유롭게 요청 마다 5초 줌
+                        }
                     }
                 });
                 rqThread.Start(); //위에 정의한 Thread 알바생 시작
@@ -130,15 +159,24 @@ namespace DailyStockDataCollector
                    
                     for (int i = 0; i < codeList.Count(); i++)
                     {
-                        code = codeList[i];
-                        axKHOpenAPI1.SetInputValue("시간일자구분", "2");
-                        axKHOpenAPI1.SetInputValue("금액수량구분", "2");
-                        axKHOpenAPI1.SetInputValue("종목코드", code);
-                        axKHOpenAPI1.SetInputValue("날짜", dateTextBox.Text);
-                        int result = axKHOpenAPI1.CommRqData("프로그램일별요청", "opt90013", 0, GetScreenNum());
-                        Thread.Sleep(sleepTime);
-                        objAuto.WaitOne(timeOut);
-                      
+                        if (i % 2 == 0)
+                        {
+                            axKHOpenAPI1.SetInputValue("시간일자구분", "2");
+                            axKHOpenAPI1.SetInputValue("금액수량구분", "2");
+                            axKHOpenAPI1.SetInputValue("종목코드", codeList[i]);
+                            axKHOpenAPI1.SetInputValue("날짜", dateTextBox.Text);
+                            int result = axKHOpenAPI1.CommRqData("프로그램일별요청_" + codeList[i], "opt90013", 0, GetScreenNum());
+                        }
+                        else
+                        {
+                            axKHOpenAPI2.SetInputValue("시간일자구분", "2");
+                            axKHOpenAPI2.SetInputValue("금액수량구분", "2");
+                            axKHOpenAPI2.SetInputValue("종목코드", codeList[i]);
+                            axKHOpenAPI2.SetInputValue("날짜", dateTextBox.Text);
+                            int result = axKHOpenAPI2.CommRqData("프로그램일별요청_" + codeList[i], "opt90013", 0, GetScreenNum());
+                            Thread.Sleep(sleepTime);
+                        }
+                        //objAuto.WaitOne(timeOut);
                     }
                 });
                 rqThread.Start();
@@ -149,14 +187,20 @@ namespace DailyStockDataCollector
                 codeList = getCodeList(여기서부터다시시작textBox.Text);
                 Thread rqThread = new Thread(delegate ()
                 {
-                  
                     for (int i = 0; i < codeList.Count(); i++)
                     {
-                        code = codeList[i];
-                        axKHOpenAPI1.SetInputValue("종목코드", code);
-                        int result = axKHOpenAPI1.CommRqData("주식기본정보요청", "opt10001", 0, GetScreenNum());
-                        Thread.Sleep(sleepTime);
-                        objAuto.WaitOne(timeOut);
+                        if (i % 2 == 0)
+                        {
+                            axKHOpenAPI1.SetInputValue("종목코드", codeList[i]);
+                            int result = axKHOpenAPI1.CommRqData("주식기본정보요청_" + codeList[i], "opt10001", 0, GetScreenNum());
+                        }
+                        else
+                        {
+                            axKHOpenAPI2.SetInputValue("종목코드", codeList[i]);
+                            int result = axKHOpenAPI2.CommRqData("주식기본정보요청_" + codeList[i], "opt10001", 0, GetScreenNum());
+                            Thread.Sleep(sleepTime);
+                        }
+                        //objAuto.WaitOne(timeOut);
                     }
                 });
                 rqThread.Start();
@@ -169,11 +213,18 @@ namespace DailyStockDataCollector
                 {
                     for (int i = 0; i < codeList.Count(); i++)
                     {
-                        code = codeList[i];
-                        axKHOpenAPI1.SetInputValue("종목코드", code); //input에 날짜가 없으니... 장중에는 하지 말고 18:00 이후에 저장 바람
-                        int result = axKHOpenAPI1.CommRqData("주식일주월시분요청", "opt10005", 0, GetScreenNum());
-                        Thread.Sleep(sleepTime);
-                        objAuto.WaitOne(timeOut);
+                        if (i % 2 == 0)
+                        {
+                            axKHOpenAPI1.SetInputValue("종목코드", codeList[i]); //input에 날짜가 없으니... 장중에는 하지 말고 18:00 이후에 저장 바람
+                            int result = axKHOpenAPI1.CommRqData("주식일주월시분요청_" + codeList[i], "opt10005", 0, GetScreenNum());
+                        }
+                        else
+                        {
+                            axKHOpenAPI2.SetInputValue("종목코드", codeList[i]); //input에 날짜가 없으니... 장중에는 하지 말고 18:00 이후에 저장 바람
+                            int result = axKHOpenAPI2.CommRqData("주식일주월시분요청_" + codeList[i], "opt10005", 0, GetScreenNum());
+                            Thread.Sleep(sleepTime);
+                        }
+                        //objAuto.WaitOne(timeOut);
                     }
                 });
                 rqThread.Start();
@@ -181,6 +232,7 @@ namespace DailyStockDataCollector
             else if (sender == 종목명저장Button)
                 // 이거 왜만들었지? 파이썬으로 분석할때 쓰려고 했나? 그렇다
             {
+                codeList = getCodeList(여기서부터다시시작textBox.Text);
                 listBox.Items.Add("종목명 저장 클릭");
                 Thread rqThread = new Thread(delegate ()
                 {
@@ -214,33 +266,35 @@ namespace DailyStockDataCollector
             Console.WriteLine("sRQName:" + e.sRQName);
             Console.WriteLine("sScrNo: " + e.sScrNo);
             Console.WriteLine("sTrCode: " + e.sTrCode);
+            AxKHOpenAPI API = (AxKHOpenAPI)sender;
 
 
             int indexOfCode = Array.IndexOf(codeList, code);
 
-            if (e.sRQName.Equals("종목별투자자기관별요청")) 
+            if (e.sRQName.Contains("종목별투자자기관별요청")) 
             {
+                string code = e.sRQName.Split('_')[1];
                 listBox.Items.Add("Worked On: 종목별투자자기관별요청 " + code);
-                for (int i = 0; i < axKHOpenAPI1.GetRepeatCnt(e.sTrCode, e.sRQName); i++)
+                for (int i = 0; i < API.GetRepeatCnt(e.sTrCode, e.sRQName); i++)
                 {
                     long recorded_time = Int64.Parse(DateTime.Now.ToString("yyyyMMddHHmmss"));
-                    int date = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "일자"));
-                    int price = Math.Abs(dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "현재가")));
-                    float change = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "등락율"));
-                    int volume = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "누적거래량"));
-                    int tradingValue = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "누적거래대금"));
-                    int retail = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "개인투자자"));
-                    int foreigner = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "외국인투자자"));
-                    int insitiute = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "기관계"));
-                    int IB = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "금융투자"));
-                    int insurance = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "보험"));
-                    int trustFund = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "투신"));
-                    int etcFinance = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "기타금융"));
-                    int bank = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "은행"));
-                    int pensionFund = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "연기금등"));
-                    int privateFund = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "사모펀드"));
-                    int country = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "국가"));
-                    int etcCompany = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "기타법인"));
+                    int date = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "일자"));
+                    int price = Math.Abs(dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "현재가")));
+                    float change = dataCleansingFloat(API.GetCommData(e.sTrCode, e.sRQName, i, "등락율"));
+                    int volume = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "누적거래량"));
+                    int tradingValue = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "누적거래대금"));
+                    int retail = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "개인투자자"));
+                    int foreigner = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "외국인투자자"));
+                    int insitiute = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "기관계"));
+                    int IB = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "금융투자"));
+                    int insurance = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "보험"));
+                    int trustFund = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "투신"));
+                    int etcFinance = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "기타금융"));
+                    int bank = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "은행"));
+                    int pensionFund = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "연기금등"));
+                    int privateFund = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "사모펀드"));
+                    int country = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "국가"));
+                    int etcCompany = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "기타법인"));
 
                     if (retail > 0 || foreigner > 0 || insitiute > 0)
                     {
@@ -259,18 +313,23 @@ namespace DailyStockDataCollector
                                 "values(@recorded_time, @code, @date, @price, @change, @volume, @tradingValue, @retail, @foreigner, @insitiute, @IB, @insurance, @trustFund, @etcFinance, @bank, @pensionFund, @privateFund, @country, @etcCompany)", new { recorded_time, code, date, price, change, volume, tradingValue, retail, foreigner, insitiute, IB, insurance, trustFund, etcFinance, bank, pensionFund, privateFund, country, etcCompany });
                         }
                     }
-                    objAuto.Set(); // 일시정지 시킨 쓰레드 다시 시작
+                    //objAuto.Set(); // 일시정지 시킨 쓰레드 다시 시작
                 }
             }
             else if (e.sRQName.Contains("프로그램일별요청"))
                 
             {
+                string code = e.sRQName.Split('_')[1];
+                string API_name = ((AxKHOpenAPI)sender).Name;
+
                 listBox.Items.Add("Worked On: 프로그램일별요청 " + code);
-                for (int i = 0; i < axKHOpenAPI1.GetRepeatCnt(e.sTrCode, e.sRQName); i++)
+
+
+                for (int i = 0; i < API.GetRepeatCnt(e.sTrCode, e.sRQName); i++)
                 {
                     long recorded_time = Int64.Parse(DateTime.Now.ToString("yyyyMMddHHmmss"));
-                    int date = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "일자"));
-                    int program = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "프로그램순매수수량"));
+                    int date = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "일자"));
+                    int program = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "프로그램순매수수량"));
 
                     Console.WriteLine("code" + code);
                     Console.WriteLine("program" + program);
@@ -281,47 +340,48 @@ namespace DailyStockDataCollector
                         cnn.Execute("update DailyCollectedData set program = @program where (code = @code and date = @date)", new { program, code, date });
                     }
                 }
-                objAuto.Set();
+                //objAuto.Set();
             }
 
             else if (e.sRQName.Contains("주식기본정보요청"))
-            
             {
+                string code = e.sRQName.Split('_')[1];
+
                 listBox.Items.Add("Worked On: 주식기본정보요청 " + code);
 
                 long recorded_time = Int64.Parse(DateTime.Now.ToString("yyyyMMddHHmmss")); // 이거는 안쓰네
 
-                int freefloat = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "유통주식"));         
-                int reportingMonth = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "결산월"));
-                float faceValue = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "액면가")); //액면가가 소수점인 것도 있다
-                int netAsset = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "자본금"));
-                int numberOfStocks = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "상장주식"));
-                float marginRatio = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "신용비율"));
-                int annualHigh = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "연중최고"));
-                int annualLow = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "연중최저"));
-                int marketCap = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "시가총액"));
-                float foreignerRatio = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "외인소진률"));
-                int substitutePrice = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "대용가"));
-                float PER = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "PER"));
-                int EPS = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "EPS"));
-                float ROE = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "ROE"));
-                float PBR = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "PBR"));
-                float EV = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "EV"));
-                float BPS = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "PBR"));
-                int Revenue = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "매출액"));
-                int Profit = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "영업이익"));
-                int Earning = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "당기순이익"));
-                int twoFiveZeroHigh = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "250최고"));
-                int twoFiveZeroLow = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "250최저"));
-                int twoFiveZeroHighDate = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "250최고가일"));
-                float twoFiveZeroHighTodayRatio = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "250최고가대비율"));
-                int twoFiveZeroLowDate = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "250최거가일"));
-                float twoFiveZeroLowTodayRatio = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "250최저가대비율"));
-                int price = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "현재가"));
-                float change = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "등락율"));
-                int volume = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "거래량"));
-                float todayYesterdayVolume = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "거래대비"));
-                float freefloatRatio = dataCleansingFloat(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, 0, "유통비율"));
+                int freefloat = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "유통주식"));         
+                int reportingMonth = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "결산월"));
+                float faceValue = dataCleansingFloat(API.GetCommData(e.sTrCode, e.sRQName, 0, "액면가")); //액면가가 소수점인 것도 있다
+                int netAsset = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "자본금"));
+                int numberOfStocks = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "상장주식"));
+                float marginRatio = dataCleansingFloat(API.GetCommData(e.sTrCode, e.sRQName, 0, "신용비율"));
+                int annualHigh = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "연중최고"));
+                int annualLow = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "연중최저"));
+                int marketCap = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "시가총액"));
+                float foreignerRatio = dataCleansingFloat(API.GetCommData(e.sTrCode, e.sRQName, 0, "외인소진률"));
+                int substitutePrice = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "대용가"));
+                float PER = dataCleansingFloat(API.GetCommData(e.sTrCode, e.sRQName, 0, "PER"));
+                int EPS = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "EPS"));
+                float ROE = dataCleansingFloat(API.GetCommData(e.sTrCode, e.sRQName, 0, "ROE"));
+                float PBR = dataCleansingFloat(API.GetCommData(e.sTrCode, e.sRQName, 0, "PBR"));
+                float EV = dataCleansingFloat(API.GetCommData(e.sTrCode, e.sRQName, 0, "EV"));
+                float BPS = dataCleansingFloat(API.GetCommData(e.sTrCode, e.sRQName, 0, "PBR"));
+                int Revenue = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "매출액"));
+                int Profit = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "영업이익"));
+                int Earning = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "당기순이익"));
+                int twoFiveZeroHigh = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "250최고"));
+                int twoFiveZeroLow = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "250최저"));
+                int twoFiveZeroHighDate = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "250최고가일"));
+                float twoFiveZeroHighTodayRatio = dataCleansingFloat(API.GetCommData(e.sTrCode, e.sRQName, 0, "250최고가대비율"));
+                int twoFiveZeroLowDate = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "250최거가일"));
+                float twoFiveZeroLowTodayRatio = dataCleansingFloat(API.GetCommData(e.sTrCode, e.sRQName, 0, "250최저가대비율"));
+                int price = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "현재가"));
+                float change = dataCleansingFloat(API.GetCommData(e.sTrCode, e.sRQName, 0, "등락율"));
+                int volume = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, 0, "거래량"));
+                float todayYesterdayVolume = dataCleansingFloat(API.GetCommData(e.sTrCode, e.sRQName, 0, "거래대비"));
+                float freefloatRatio = dataCleansingFloat(API.GetCommData(e.sTrCode, e.sRQName, 0, "유통비율"));
 
                 Console.WriteLine("종목코드" + code);
                 Console.WriteLine("결산월" + reportingMonth);
@@ -418,20 +478,22 @@ namespace DailyStockDataCollector
                         });
 
                 }
-                objAuto.Set();
+                //objAuto.Set();
             }
             else if (e.sRQName.Contains("주식일주월시분요청"))
             {
+                string code = e.sRQName.Split('_')[1];
+
                 listBox.Items.Add("Worked On: 주식일주월시분요청 " + code);
-                for (int i = 0; i < axKHOpenAPI1.GetRepeatCnt(e.sTrCode, e.sRQName); i++)
+                for (int i = 0; i < API.GetRepeatCnt(e.sTrCode, e.sRQName); i++)
                 {
                     long recorded_time = Int64.Parse(DateTime.Now.ToString("yyyyMMddHHmmss"));
-                    int date = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "날짜"));
-                    int open = Math.Abs(dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "시가")));
-                    int high = Math.Abs(dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "고가")));
-                    int low = Math.Abs(dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "저가")));
-                    int close = Math.Abs(dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "종가")));
-                    int volume = dataCleansing(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRQName, i, "거래량"));
+                    int date = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "날짜"));
+                    int open = Math.Abs(dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "시가")));
+                    int high = Math.Abs(dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "고가")));
+                    int low = Math.Abs(dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "저가")));
+                    int close = Math.Abs(dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "종가")));
+                    int volume = dataCleansing(API.GetCommData(e.sTrCode, e.sRQName, i, "거래량"));
 
                     Console.WriteLine("code" + code);
                     Console.WriteLine("close" + close);
@@ -443,7 +505,7 @@ namespace DailyStockDataCollector
 
                     }
                 }
-                objAuto.Set();
+                //objAuto.Set();
             }
 
             // 키움에서 api 얼마나 빨리 받고 프로그램에서 처리하나 계산 필요한 이유는 총 걸리는 계산 하기 위해
@@ -506,6 +568,13 @@ namespace DailyStockDataCollector
 
             codeArray = codeArray.OrderBy(x => x).ToArray(); // Ascending나열 해서 프로그램 정지시킨 종목을 찾기를 위함
             codeArray = codeArray.Skip(1).ToArray(); // remove first element, which is blank
+
+            //System.IO.File.WriteAllLines("codeArray.txt", codeArray.Select(tb => tb));
+
+
+
+
+
             if (interruptedCode.Equals("") == false)
             {
                 int index = Array.FindIndex(codeArray, row => row == interruptedCode);

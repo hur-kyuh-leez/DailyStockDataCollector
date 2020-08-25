@@ -44,7 +44,9 @@
             this.종목명저장Button = new System.Windows.Forms.Button();
             this.progressBar = new System.Windows.Forms.ProgressBar();
             this.progressLabel = new System.Windows.Forms.Label();
+            this.axKHOpenAPI2 = new AxKHOpenAPILib.AxKHOpenAPI();
             ((System.ComponentModel.ISupportInitialize)(this.axKHOpenAPI1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.axKHOpenAPI2)).BeginInit();
             this.SuspendLayout();
             // 
             // axKHOpenAPI1
@@ -163,11 +165,21 @@
             this.progressLabel.Text = "로그인중...";
             this.progressLabel.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
+            // axKHOpenAPI2
+            // 
+            this.axKHOpenAPI2.Enabled = true;
+            this.axKHOpenAPI2.Location = new System.Drawing.Point(700, 428);
+            this.axKHOpenAPI2.Name = "axKHOpenAPI2";
+            this.axKHOpenAPI2.OcxState = ((System.Windows.Forms.AxHost.State)(resources.GetObject("axKHOpenAPI2.OcxState")));
+            this.axKHOpenAPI2.Size = new System.Drawing.Size(100, 50);
+            this.axKHOpenAPI2.TabIndex = 14;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.axKHOpenAPI2);
             this.Controls.Add(this.progressLabel);
             this.Controls.Add(this.progressBar);
             this.Controls.Add(this.종목명저장Button);
@@ -184,6 +196,7 @@
             this.Name = "Form1";
             this.Text = "Form1";
             ((System.ComponentModel.ISupportInitialize)(this.axKHOpenAPI1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.axKHOpenAPI2)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -205,6 +218,7 @@
         private System.Windows.Forms.Button 종목명저장Button;
         private System.Windows.Forms.ProgressBar progressBar;
         private System.Windows.Forms.Label progressLabel;
+        private AxKHOpenAPILib.AxKHOpenAPI axKHOpenAPI2;
     }
 }
 
